@@ -411,7 +411,7 @@ async function assistant(request, env) {
     toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
     generationConfig: { temperature: 0.2 },
   });
-  // modèle configuré, puis modèle de secours si Google ne le connaît pas
+  // modèle configuré, puis modèle de secours s'il est inconnu (404) ou surchargé/en panne (5xx)
   const models = [...new Set([env.GEMINI_MODEL || 'gemini-3.8-flash', 'gemini-flash-latest'])];
   let res, out;
   for (const model of models) {
@@ -421,14 +421,17 @@ async function assistant(request, env) {
       body: payload,
     });
     out = await res.json().catch(() => ({}));
-    if (res.status !== 404) break;
+    if (res.ok) break;
+    console.error('gemini', model, res.status, JSON.stringify(out).slice(0, 500));
+    if (res.status !== 404 && res.status < 500) break;
   }
   if (!res.ok) {
-    console.error('gemini', res.status, JSON.stringify(out).slice(0, 500));
+    const detail = String(out.error?.message || '').slice(0, 200);
     const msg = res.status === 429 ? 'Limite Gemini atteinte, réessaie dans un moment.'
       : res.status === 400 || res.status === 403 ? 'Gemini a refusé la demande (clé invalide ?).'
+      : res.status === 503 ? 'Gemini est surchargé, réessaie dans un moment.'
       : 'Gemini ne répond pas.';
-    return json({ error: msg }, 502);
+    return json({ error: `${msg} (${res.status}${detail ? ` : ${detail}` : ''})` }, 502);
   }
   const parts = out.candidates?.[0]?.content?.parts || [];
   return json({
@@ -462,7 +465,7 @@ async function driveList(env, q) {
 // Arborescence du dossier : un appel groupé par niveau (25 dossiers par requête) pour rester sous la limite d'appels du Worker
 async function driveCourses(url, env) {
   try {
-    const name = (url.searchParams.get('root') || 'Cours').trim();
+    const name = (url.searchParams.get('root') || 'BUT2').trim();
     if (!name || name.length > 200) return json({ error: 'Nom de dossier invalide' }, 400);
     // échappement des requêtes Drive : \ devient \\ et ' devient \'
     const quoted = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
