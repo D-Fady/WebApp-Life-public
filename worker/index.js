@@ -400,7 +400,8 @@ async function assistant(request, env) {
     'Programme de sport de la semaine :',
     sessions,
     '',
-    "Règles : utilise les fonctions pour chaque ajout ou pour lancer une séance, plusieurs si besoin. Convertis les dates relatives (demain, jeudi, la semaine prochaine…) en AAAA-MM-JJ, toujours dans le futur proche pour un rendez-vous. Pour un repas sans macros, estime-les de façon réaliste et mets estimated à true. « Lance ma séance » sans jour = aujourd'hui.",
+    "Règles : utilise les fonctions pour chaque ajout ou pour lancer une séance, plusieurs si besoin. Convertis les dates relatives (demain, jeudi, la semaine prochaine…) en AAAA-MM-JJ, toujours dans le futur proche pour un rendez-vous. « Lance ma séance » sans jour = aujourd'hui.",
+    "Nutrition : comprends la phrase telle qu'elle est dite, sans format imposé. Pour un plat composé (quiche, salade, gratin…), fais un seul add_meal pour le plat entier : déduis sa composition des ingrédients cités, puis calcule les macros de la quantité mangée. Si la quantité est floue (« deux parts », « une assiette », « un bol »), estime un poids réaliste (une part de quiche ≈ 150 g) et mets-le dans label, ex. « Quiche carottes, épinards, chèvre, 2 parts (≈ 300 g) ». Des aliments séparés (« du poulet et du riz ») = un appel par aliment. Si les macros ne sont pas dites, estime-les toujours (jamais 0 par défaut, jamais de refus) et mets estimated à true.",
     "Réponds toujours en français, en une phrase courte, au tutoiement. Si la demande est ambiguë ou ne correspond à aucune fonction, réponds sans appeler de fonction (question courte ou réponse simple).",
   ].join('\n');
 
@@ -409,11 +410,13 @@ async function assistant(request, env) {
     contents: [{ role: 'user', parts: [{ text }] }],
     tools: ASSISTANT_TOOLS,
     toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
-    generationConfig: { temperature: 0.2 },
+    // pas de température basse : Google la déconseille pour Gemini 3 (boucles sur les demandes complexes)
   });
-  // modèle configuré, puis modèle de secours s'il est inconnu (404) ou surchargé/en panne (5xx)
-  const models = [...new Set([env.GEMINI_MODEL || 'gemini-3.8-flash', 'gemini-flash-latest'])];
-  let res, out;
+  // modèle configuré, puis modèles gratuits de secours (quota séparé par modèle) si l'un est
+  // inconnu (404), à court de quota (429), en panne (5xx) ou renvoie une réponse vide
+  const fallbacks = (env.GEMINI_FALLBACKS || 'gemini-flash-latest,gemini-flash-lite-latest').split(',').map((m) => m.trim()).filter(Boolean);
+  const models = [...new Set([env.GEMINI_MODEL || 'gemini-3.8-flash', ...fallbacks])];
+  let res, out, parts = [], empty = '';
   for (const model of models) {
     res = await fetch(geminiUrl(env, model), {
       method: 'POST',
@@ -421,19 +424,25 @@ async function assistant(request, env) {
       body: payload,
     });
     out = await res.json().catch(() => ({}));
-    if (res.ok) break;
+    if (res.ok) {
+      parts = (out.candidates?.[0]?.content?.parts || []).filter((p) => p.functionCall || (p.text && !p.thought));
+      if (parts.length) break;
+      empty = out.candidates?.[0]?.finishReason || out.promptFeedback?.blockReason || 'réponse vide';
+      console.error('gemini', model, 'vide', empty);
+      continue;
+    }
     console.error('gemini', model, res.status, JSON.stringify(out).slice(0, 500));
-    if (res.status !== 404 && res.status < 500) break;
+    if (res.status !== 404 && res.status !== 429 && res.status < 500) break;
   }
-  if (!res.ok) {
+  if (!parts.length) {
+    if (res.ok) return json({ error: `Gemini n'a pas su traiter la demande (${empty}). Reformule-la autrement.` }, 502);
     const detail = String(out.error?.message || '').slice(0, 200);
-    const msg = res.status === 429 ? 'Limite Gemini atteinte, réessaie dans un moment.'
+    const msg = res.status === 429 ? 'Limite Gemini atteinte sur tous les modèles, réessaie plus tard.'
       : res.status === 400 || res.status === 403 ? 'Gemini a refusé la demande (clé invalide ?).'
       : res.status === 503 ? 'Gemini est surchargé, réessaie dans un moment.'
       : 'Gemini ne répond pas.';
     return json({ error: `${msg} (${res.status}${detail ? ` : ${detail}` : ''})` }, 502);
   }
-  const parts = out.candidates?.[0]?.content?.parts || [];
   return json({
     calls: parts.filter((p) => p.functionCall).map((p) => ({ name: p.functionCall.name, args: p.functionCall.args || {} })),
     text: parts.filter((p) => p.text).map((p) => p.text).join(' ').trim(),
