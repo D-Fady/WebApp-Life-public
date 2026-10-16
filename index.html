@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cut">
+  <title>Life</title>
+  <meta name="theme-color" content="#faf2f4">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Applique l'apparence avant le premier rendu (évite un flash de couleur)
+    try {
+      const s = JSON.parse(localStorage.getItem('life.v1') || '{}').settings || {};
+      if (s.theme && s.theme !== 'auto') document.documentElement.dataset.theme = s.theme;
+      if (s.bg && s.bg !== 'rose') document.documentElement.dataset.bg = s.bg;
+    } catch {}
+  </script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"><i></i><i></i></div>
+
+  <header class="topbar">
+    <div>
+      <div class="sub" id="view-sub"></div>
+      <h1 id="view-title">Aujourd'hui</h1>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn glass" id="mic-btn" aria-label="Parler à l'assistant" hidden></button>
+      <button class="icon-btn glass" id="menu-btn" aria-label="Réglages"></button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <span class="tab-bubble" id="tab-bubble"></span>
+    <button data-view="today" class="active" data-icon="home">Aujourd'hui</button>
+    <button data-view="sport" data-icon="dumbbell">Sport</button>
+    <button data-view="agenda" data-icon="calendar">Agenda</button>
+    <button data-view="todo" data-icon="check">Tâches</button>
+    <button data-view="courses" data-icon="book">Cours</button>
+    <button data-view="nutrition" data-icon="leaf">Nutrition</button>
+  </nav>
+
+  <main id="view"></main>
+
+  <dialog id="form-dialog">
+    <form method="dialog" id="form-dialog-form">
+      <h2 id="form-dialog-title"></h2>
+      <div id="form-dialog-fields"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn" id="form-dialog-cancel">Annuler</button>
+        <button type="submit" class="btn primary" id="form-dialog-ok">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <div class="sheet" id="settings-body"></div>
+  </dialog>
+
+  <dialog id="sheet-dialog">
+    <div class="sheet" id="sheet-body"></div>
+  </dialog>
+
+  <dialog id="assistant-dialog">
+    <div class="sheet" id="assistant-body"></div>
+  </dialog>
+
+  <div id="timer" class="timer" hidden></div>
+
+  <div id="viewer" class="viewer" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Copie ce fichier en « .dev.vars » pour tester en local avec « npx wrangler dev ».
+# .dev.vars est ignoré par git : n'y mets jamais de secrets dans un fichier suivi par git.
+# En local, ajoute aussi http://localhost:8787/auth/callback aux URI de redirection de ton client OAuth.
+GOOGLE_CLIENT_ID=ton-id-client.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=ton-code-secret
+ALLOWED_EMAIL=toi@gmail.com
+GEMINI_API_KEY=ta-cle-gemini

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Confidentialité – Life</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <style>body { padding-bottom: 40px; } main { max-width: 680px; } .group h2 { margin-bottom: 6px; } .group p + p, .group ul { margin-top: 10px; } .group ul { padding-left: 20px; margin-bottom: 0; } .group li + li { margin-top: 6px; }</style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"><i></i><i></i></div>
+  <header class="topbar"><div><div class="sub">Life</div><h1>Confidentialité</h1></div></header>
+  <main>
+    <section class="group">
+      <p>Life est un logiciel libre de tableau de bord personnel (sport, agenda, tâches, cours, nutrition). Chaque copie de Life est installée et hébergée par la personne qui l'utilise. Cette copie-ci n'est utilisée que par son propriétaire : une seule adresse Google peut s'y connecter.</p>
+      <p lang="en" class="muted small">Life is free, self-hosted software. Each instance is installed and used by a single person, its owner. Google user data is used only to show and update the owner's own calendar, tasks and course files, is never shared, sold or used for advertising, and is not used to train AI models.</p>
+    </section>
+    <section class="group">
+      <h2>Données enregistrées</h2>
+      <p>Les données saisies dans l'app (programme de sport, rendez-vous, tâches, cours, aliments) sont enregistrées dans le navigateur de l'appareil. Une fois la synchronisation activée, elles sont aussi enregistrées sur l'hébergement Cloudflare du propriétaire, uniquement pour être retrouvées sur ses autres appareils.</p>
+    </section>
+    <section class="group">
+      <h2>Données Google</h2>
+      <p>Si le propriétaire connecte son compte Google, l'app y accède seulement pour :</p>
+      <ul>
+        <li>Google Agenda : afficher et ajouter ses rendez-vous ;</li>
+        <li>Google Tasks : afficher et ajouter ses tâches, et importer dans le suivi nutritionnel les tâches qui commencent par « Repas » ;</li>
+        <li>Google Drive, en lecture seule : lister et afficher les documents de son dossier de cours.</li>
+      </ul>
+      <p>Ces données ne sont ni partagées, ni vendues, ni utilisées pour de la publicité ou pour entraîner des modèles d'IA. L'usage des données reçues des API Google respecte la <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">politique Google relative aux données utilisateur des services d'API</a>, y compris ses exigences d'usage limité.</p>
+    </section>
+    <section class="group">
+      <h2>Services tiers</h2>
+      <p>L'app est hébergée par Cloudflare. Les phrases dictées ou écrites dans l'assistant sont envoyées à l'API Gemini de Google pour être comprises. La police vient de Google Fonts et le lecteur PDF (pdf.js) de cdnjs. Aucun autre service ne reçoit de données.</p>
+    </section>
+    <section class="group">
+      <h2>Suppression</h2>
+      <p>Le menu Réglages permet d'exporter ou d'effacer toutes les données. L'accès au compte Google peut être retiré à tout moment sur <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a>.</p>
+    </section>
+    <p class="small" style="margin-left:4px"><a href="./">Retour à l'app</a>&nbsp;&nbsp; <a href="conditions">Conditions d'utilisation</a></p>
+  </main>
+</body>
+</html>

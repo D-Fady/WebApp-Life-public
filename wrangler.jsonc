@@ -1,0 +1,30 @@
+// Configuration Cloudflare du Worker. Les fichiers du site sont à la racine
+// (voir .assetsignore pour ce qui n'est pas publié comme page).
+//
+// Secrets à ajouter dans Cloudflare : Worker > Settings > Variables and Secrets > Add, type « Secret » :
+//   GOOGLE_CLIENT_ID     : ID client OAuth Google (…apps.googleusercontent.com)
+//   GOOGLE_CLIENT_SECRET : code secret de ce client OAuth
+//   ALLOWED_EMAIL        : la seule adresse Gmail autorisée à se connecter (la tienne)
+//   GEMINI_API_KEY       : (facultatif) clé Gemini d'aistudio.google.com, pour le micro
+// Les secrets ne sont jamais écrits dans ce fichier ni dans le dépôt.
+{
+  "$schema": "https://unpkg.com/wrangler@4.151.0/config-schema.json",
+  // Doit correspondre au nom du Worker créé dans Cloudflare
+  "name": "life",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/auth/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "STORE", "class_name": "Store" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }],
+  "vars": {
+    // Modèle Gemini utilisé par le micro (repli automatique sur gemini-flash-latest)
+    "GEMINI_MODEL": "gemini-3.8-flash"
+  },
+  "observability": { "enabled": true }
+}

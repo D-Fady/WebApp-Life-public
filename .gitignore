@@ -1,0 +1,23 @@
+# Secrets locaux (wrangler dev) et fichiers d'environnement
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+
+# Outils et builds
+node_modules/
+.wrangler/
+dist/
+
+# Sauvegardes exportées depuis l'app (données perso)
+life-sauvegarde-*.json
+life-*.md
+
+# Notes et réglages locaux de Claude Code
+CLAUDE.md
+.claude/
+
+# Système
+.DS_Store
+Thumbs.db
