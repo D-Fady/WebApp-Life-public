@@ -414,8 +414,8 @@ async function assistant(request, env) {
   });
   // modèle configuré, puis modèles gratuits de secours (quota séparé par modèle) si l'un est
   // inconnu (404), à court de quota (429), en panne (5xx) ou renvoie une réponse vide
-  const fallbacks = (env.GEMINI_FALLBACKS || 'gemini-flash-latest,gemini-flash-lite-latest').split(',').map((m) => m.trim()).filter(Boolean);
-  const models = [...new Set([env.GEMINI_MODEL || 'gemini-3.8-flash', ...fallbacks])];
+  const fallbacks = (env.GEMINI_FALLBACKS ?? 'gemini-3.1-flash-lite,gemini-3.8-flash').split(',').map((m) => m.trim()).filter(Boolean);
+  const models = [...new Set([env.GEMINI_MODEL || 'gemini-3.5-flash-lite', ...fallbacks])];
   let res, out, parts = [], empty = '';
   for (const model of models) {
     res = await fetch(geminiUrl(env, model), {
@@ -434,6 +434,16 @@ async function assistant(request, env) {
     console.error('gemini', model, res.status, JSON.stringify(out).slice(0, 500));
     if (res.status !== 404 && res.status !== 429 && res.status < 500) break;
   }
+  if (!parts.length && env.AI) {
+    // dernier recours : Cloudflare Workers AI (sans clé, quota gratuit à part)
+    try {
+      const r = await workersAI(env, system, text);
+      if (r.calls.length || r.text) return json(r);
+      console.error('workers-ai', 'vide');
+    } catch (e) {
+      console.error('workers-ai', String(e?.message || e).slice(0, 500));
+    }
+  }
   if (!parts.length) {
     if (res.ok) return json({ error: `Gemini n'a pas su traiter la demande (${empty}). Reformule-la autrement.` }, 502);
     const detail = String(out.error?.message || '').slice(0, 200);
@@ -447,6 +457,28 @@ async function assistant(request, env) {
     calls: parts.filter((p) => p.functionCall).map((p) => ({ name: p.functionCall.name, args: p.functionCall.args || {} })),
     text: parts.filter((p) => p.text).map((p) => p.text).join(' ').trim(),
   });
+}
+
+// Schéma Gemini (types en MAJUSCULES) → JSON Schema (minuscules) attendu par Workers AI
+const lowerTypes = (s) => (Array.isArray(s) ? s.map(lowerTypes)
+  : s && typeof s === 'object' ? Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' && typeof v === 'string' ? v.toLowerCase() : lowerTypes(v)]))
+  : s);
+const AI_TOOLS = ASSISTANT_TOOLS[0].functionDeclarations.map((f) => ({ type: 'function', function: lowerTypes(f) }));
+
+async function workersAI(env, system, text) {
+  const out = await env.AI.run(env.WORKERS_AI_MODEL || '@cf/google/gemma-4-26b-a4b-it', {
+    messages: [{ role: 'system', content: system }, { role: 'user', content: text }],
+    tools: AI_TOOLS,
+  });
+  // format OpenAI (choices[0].message) ou ancien format Workers AI (tool_calls/response à la racine)
+  const msg = out?.choices?.[0]?.message || out || {};
+  const calls = (msg.tool_calls || []).map((c) => {
+    const f = c.function || c;
+    let args = f.arguments || {};
+    if (typeof args === 'string') try { args = JSON.parse(args); } catch { args = {}; }
+    return { name: f.name, args };
+  }).filter((c) => c.name);
+  return { calls, text: String(msg.content ?? msg.response ?? '').replace(/<think>[\s\S]*?<\/think>/g, '').trim() };
 }
 
 /* ---------- Google Drive : dossier de cours (lecture seule) ---------- */
@@ -474,7 +506,7 @@ async function driveList(env, q) {
 // Arborescence du dossier : un appel groupé par niveau (25 dossiers par requête) pour rester sous la limite d'appels du Worker
 async function driveCourses(url, env) {
   try {
-    const name = (url.searchParams.get('root') || 'BUT2').trim();
+    const name = (url.searchParams.get('root') || 'Cours').trim();
     if (!name || name.length > 200) return json({ error: 'Nom de dossier invalide' }, 400);
     // échappement des requêtes Drive : \ devient \\ et ' devient \'
     const quoted = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");

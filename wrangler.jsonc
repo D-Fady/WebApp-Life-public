@@ -23,8 +23,13 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }],
   "vars": {
-    // Modèle Gemini utilisé par le micro (repli automatique sur gemini-flash-latest)
-    "GEMINI_MODEL": "gemini-3.8-flash"
+    // Micro : le serveur essaie GEMINI_MODEL, puis les modèles de GEMINI_FALLBACKS (en cas d'erreur, de quota
+    // atteint ou de réponse vide), puis Cloudflare Workers AI (WORKERS_AI_MODEL, gratuit jusqu'à 10 000 neurones
+    // par jour, sans clé). Les quotas gratuits de Gemini sont visibles sur aistudio.google.com/rate-limit.
+    "GEMINI_MODEL": "gemini-3.5-flash-lite",
+    "GEMINI_FALLBACKS": "gemini-3.1-flash-lite,gemini-3.8-flash",
+    "WORKERS_AI_MODEL": "@cf/google/gemma-4-26b-a4b-it"
   },
+  "ai": { "binding": "AI" },
   "observability": { "enabled": true }
 }
