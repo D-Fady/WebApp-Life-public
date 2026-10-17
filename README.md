@@ -185,6 +185,7 @@ Pour un usage personnel, tout tient dans les offres gratuites : Cloudflare Worke
 - [pdf.js](https://mozilla.github.io/pdf.js/) (Mozilla, licence Apache 2.0), chargé depuis cdnjs, pour l'aperçu des PDF.
 - Police [Manrope](https://fonts.google.com/specimen/Manrope) (SIL Open Font License), via Google Fonts.
 - Icônes dessinées pour le projet.
+- **Created with the help of Claude (AI)**
 
 ---
 
